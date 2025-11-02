@@ -763,7 +763,7 @@ input, select, textarea {
 			-webkit-transition: -webkit-transform 0.325s ease-in-out, -webkit-filter 0.325s ease-in-out;
 			-ms-transition: -ms-transform 0.325s ease-in-out, -ms-filter 0.325s ease-in-out;
 			transition: transform 0.325s ease-in-out, filter 0.325s ease-in-out;
-			background-image: url('./bg2.jpg');
+			background-image: url('https://picx.zhimg.com/v2-a6e68003f62e0ef2de9a19721ca570d7_r.jpg');
 			background-position: center;
 			background-size: cover;
 			background-repeat: no-repeat;
@@ -777,7 +777,7 @@ input, select, textarea {
 			-ms-transition: -ms-transform 0.325s ease-in-out, -ms-filter 0.325s ease-in-out;
 			transition: transform 0.325s ease-in-out, filter 0.325s ease-in-out;
 			/*background-image: url("https://pic.rmb.bdstatic.com/bjh/7902c658c69c6d73f14debc1800f6408.jpeg");*/
-			background-image: url("./bg.jpg");
+			background-image: url("https://cdn4.winhlb.com/2025/11/02/6906d7526b1a8.jpg");
 			background-position: center;
 			background-size: cover;
 			background-repeat: no-repeat;
@@ -1311,4 +1311,5 @@ input, select, textarea {
 		 @-webkit-keyframes shine{/*创建动画*/
 			 0%,100%{ color:#fff;text-shadow:0 0 10px #000000,0 0 10px #ffffff; }
 			 50%{ text-shadow:0 0 10px #ffffff,0 0 40px #000000; }
+
 		 }
