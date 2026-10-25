@@ -118,4 +118,287 @@
         <span class="count" id="countLabel"></span>
       </div>
       <div style="display:flex; gap:8px;">
-        <button class="btn btn-download" id="downloadSe
+        <button class="btn btn-download" id="downloadSelectedBtn">⬇ 下载选中</button>
+      </div>
+    </div>
+
+    <table class="song-table">
+      <thead>
+        <tr>
+          <th class="col-check"></th>
+          <th class="col-index">#</th>
+          <th>歌曲</th>
+          <th class="col-artist">歌手</th>
+          <th class="col-action">操作</th>
+        </tr>
+      </thead>
+      <tbody id="songBody"></tbody>
+    </table>
+  </div>
+
+  <div class="notice">
+    <strong>下载说明：</strong>点击下载后，浏览器会先获取音频数据再保存为 MP3，不会跳转到播放页。首次批量下载时，若浏览器提示“允许下载多个文件”，请点击允许。若遇到跨域限制，会自动改为在新标签页打开音频，右键“另存为”即可。VIP 歌曲可能只提供试听片段，请支持正版。
+  </div>
+</div>
+
+<script>
+  const API_BASE = 'https://api.injahow.cn/meting/';
+  let currentSongs = [];
+
+  const $ = (id) => document.getElementById(id);
+
+  function setStatus(html, type = '') {
+    const el = $('status');
+    el.innerHTML = html;
+    el.className = 'status' + (type ? ' ' + type : '');
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[c]);
+  }
+
+  function extractId(raw) {
+    const input = raw.trim();
+    if (!input) return null;
+    let m = input.match(/playlist\?id=(\d+)/) || input.match(/playlist\/(\d+)/);
+    if (m) { $('type').value = 'playlist'; return m[1]; }
+    m = input.match(/song\?id=(\d+)/) || input.match(/song\/(\d+)/);
+    if (m) { $('type').value = 'song'; return m[1]; }
+    if (/^\d+$/.test(input)) return input;
+    return null;
+  }
+
+  async function parse() {
+    const raw = $('input').value.trim();
+    if (!raw) { setStatus('请输入歌单 ID、歌曲 ID 或链接', 'error'); return; }
+
+    const id = extractId(raw);
+    if (!id) { setStatus('无法识别有效的 ID，请检查输入', 'error'); return; }
+
+    const type = $('type').value;
+    const parseBtn = $('parseBtn');
+    parseBtn.disabled = true;
+    setStatus('解析中，请稍候…');
+
+    try {
+      const apiType = type === 'playlist' ? 'playlist' : 'song';
+      const res = await fetch(`${API_BASE}?type=${apiType}&id=${id}&server=netease`);
+      if (!res.ok) throw new Error(`请求失败 (HTTP ${res.status})`);
+      const data = await res.json();
+      if (!Array.isArray(data) || data.length === 0) {
+        throw new Error(type === 'playlist' ? '歌单为空或歌单不存在' : '歌曲不存在或无版权');
+      }
+
+      currentSongs = data.map(item => {
+        let songId = '';
+        try {
+          const u = new URL(item.url);
+          songId = u.searchParams.get('id') || '';
+        } catch (e) { /* ignore */ }
+        return {
+          id: songId,
+          name: item.name || '未知歌曲',
+          artist: item.artist || '未知歌手',
+          url: item.url || (songId ? `https://music.163.com/song/media/outer/url?id=${songId}` : ''),
+          selected: true
+        };
+      });
+
+      renderSongs();
+      $('resultArea').style.display = 'block';
+      setStatus(`解析成功，共 ${currentSongs.length} 首`, 'success');
+    } catch (err) {
+      console.error(err);
+      setStatus('解析失败：' + escapeHtml(err.message), 'error');
+      $('resultArea').style.display = 'none';
+    } finally {
+      parseBtn.disabled = false;
+    }
+  }
+
+  function renderSongs() {
+    const tbody = $('songBody');
+    tbody.innerHTML = '';
+
+    if (currentSongs.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="empty-state">暂无歌曲</td></tr>';
+      updateCount();
+      return;
+    }
+
+    currentSongs.forEach((song, index) => {
+      const tr = document.createElement('tr');
+
+      const tdCheck = document.createElement('td');
+      tdCheck.className = 'col-check';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = song.selected;
+      cb.addEventListener('change', () => {
+        currentSongs[index].selected = cb.checked;
+        syncSelectAll();
+        updateCount();
+      });
+      tdCheck.appendChild(cb);
+
+      const tdIndex = document.createElement('td');
+      tdIndex.className = 'col-index';
+      tdIndex.textContent = index + 1;
+
+      const tdName = document.createElement('td');
+      tdName.className = 'col-name';
+      tdName.textContent = song.name;
+
+      const tdArtist = document.createElement('td');
+      tdArtist.className = 'col-artist';
+      tdArtist.textContent = song.artist;
+
+      const tdAction = document.createElement('td');
+      tdAction.className = 'col-action';
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-secondary btn-small btn-download';
+      btn.textContent = '下载';
+      btn.addEventListener('click', async () => {
+        const result = await downloadSong(song, { btnEl: btn, openFallback: true });
+        if (!result.ok) {
+          setStatus(
+            `下载失败：${escapeHtml(song.name)}（${escapeHtml(result.error)}）。` +
+            `<a href="${song.url}" target="_blank" rel="noopener">点击手动打开</a>，右键“另存为”即可。`,
+            'error'
+          );
+        } else {
+          setStatus(`已开始下载：${escapeHtml(song.name)}`, 'success');
+        }
+      });
+      tdAction.appendChild(btn);
+
+      tr.appendChild(tdCheck);
+      tr.appendChild(tdIndex);
+      tr.appendChild(tdName);
+      tr.appendChild(tdArtist);
+      tr.appendChild(tdAction);
+      tbody.appendChild(tr);
+    });
+
+    syncSelectAll();
+    updateCount();
+  }
+
+  function syncSelectAll() {
+    $('selectAll').checked = currentSongs.length > 0 && currentSongs.every(s => s.selected);
+  }
+
+  function updateCount() {
+    const total = currentSongs.length;
+    const selected = currentSongs.filter(s => s.selected).length;
+    $('countLabel').textContent = `已选 ${selected} / ${total} 首`;
+    $('downloadSelectedBtn').disabled = selected === 0;
+  }
+
+  function sanitizeFilename(name) {
+    return String(name).replace(/[\\/:*?"<>|\r\n]/g, '_').trim().slice(0, 120) || 'song';
+  }
+
+  /**
+   * 先 fetch 拿到音频 Blob，再用同源 Blob URL 触发下载。
+   * 这样 a.download 才会生效，不会跳转到播放页。
+   */
+  async function fetchAudioBlob(url) {
+    const resp = await fetch(url, { redirect: 'follow', credentials: 'omit' });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+    const contentType = (resp.headers.get('content-type') || '').toLowerCase();
+    if (contentType.includes('text/html') || contentType.includes('application/json')) {
+      throw new Error('返回了网页/JSON 而非音频，可能无版权或需要 VIP');
+    }
+
+    const blob = await resp.blob();
+    if (blob.size < 1024) {
+      throw new Error('文件过小，可能无版权或需要 VIP');
+    }
+    return blob;
+  }
+
+  async function downloadSong(song, { btnEl = null, openFallback = true } = {}) {
+    if (!song.url) return { ok: false, error: '缺少下载地址' };
+
+    const filename = sanitizeFilename(`${song.artist} - ${song.name}`) + '.mp3';
+    if (btnEl) { btnEl.disabled = true; btnEl.textContent = '下载中…'; }
+
+    try {
+      const blob = await fetchAudioBlob(song.url);
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = filename;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      // 60 秒后再释放，避免下载未完成就被回收
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+      return { ok: true };
+    } catch (err) {
+      if (openFallback) {
+        try { window.open(song.url, '_blank', 'noopener'); } catch (e) { /* 可能被弹窗拦截 */ }
+      }
+      return { ok: false, error: err.message || '未知错误' };
+    } finally {
+      if (btnEl) { btnEl.disabled = false; btnEl.textContent = '下载'; }
+    }
+  }
+
+  async function downloadSelected() {
+    const selected = currentSongs.filter(s => s.selected);
+    if (selected.length === 0) { setStatus('请先勾选要下载的歌曲', 'error'); return; }
+
+    const btn = $('downloadSelectedBtn');
+    btn.disabled = true;
+
+    let success = 0;
+    const failed = [];
+
+    for (let i = 0; i < selected.length; i++) {
+      const song = selected[i];
+      setStatus(`正在下载 ${i + 1} / ${selected.length}：${escapeHtml(song.name)}`);
+
+      // 批量时关闭新标签页回退，避免一次性弹出一堆页面
+      const result = await downloadSong(song, { openFallback: false });
+      if (result.ok) success++;
+      else failed.push({ song, error: result.error });
+
+      // 轻微间隔，避免请求过密
+      if (i < selected.length - 1) await new Promise(r => setTimeout(r, 120));
+    }
+
+    if (failed.length === 0) {
+      setStatus(`已发送 ${success} 个下载任务。若浏览器询问是否允许下载多个文件，请点击“允许”。`, 'success');
+    } else {
+      const names = failed.map(f => escapeHtml(f.song.name)).slice(0, 5).join('、');
+      const more = failed.length > 5 ? ` 等 ${failed.length} 首` : '';
+      setStatus(
+        `成功 ${success} 首，失败 ${failed.length} 首：${names}${more}。` +
+        `失败原因多为跨域限制、无版权或需要 VIP，可逐首点击右侧“下载”按钮重试。`,
+        failed.length === selected.length ? 'error' : ''
+      );
+    }
+    btn.disabled = false;
+  }
+
+  // 事件绑定
+  $('parseBtn').addEventListener('click', parse);
+  $('input').addEventListener('keydown', (e) => { if (e.key === 'Enter') parse(); });
+
+  $('selectAll').addEventListener('change', (e) => {
+    const checked = e.target.checked;
+    currentSongs.forEach(s => s.selected = checked);
+    document.querySelectorAll('#songBody input[type="checkbox"]').forEach(cb => cb.checked = checked);
+    updateCount();
+  });
+
+  $('downloadSelectedBtn').addEventListener('click', downloadSelected);
+</script>
+</body>
+</html>
