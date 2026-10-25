@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>网易云音乐下载器 · 歌单 / 单曲</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: #f5f5f7;
+      margin: 0;
+      padding: 24px;
+      display: flex;
+      justify-content: center;
+    }
+    .container {
+      width: 100%;
+      max-width: 900px;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,.08);
+      padding: 28px 32px 32px;
+    }
+    h1 {
+      font-size: 22px;
+      margin: 0 0 6px;
+      color: #1d1d1f;
+    }
+    .subtitle {
+      font-size: 13px;
+      color: #86868b;
+      margin-bottom: 22px;
+    }
+    .input-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .input-row input[type="text"] {
+      flex: 1;
+      min-width: 220px;
+      padding: 10px 14px;
+      border: 1px solid #d2d2d7;
+      border-radius: 10px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color .2s;
+    }
+    .input-row input[type="text"]:focus {
+      border-color: #0071e3;
+    }
+    .input-row select {
+      padding: 10px 12px;
+      border: 1px solid #d2d2d7;
+      border-radius: 10px;
+      font-size: 14px;
+      background: #fff;
+      outline: none;
+      cursor: pointer;
+    }
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background .2s, opacity .2s;
+      white-space: nowrap;
+    }
+    .btn-primary {
+      background: #0071e3;
+      color: #fff;
+    }
+    .btn-primary:hover { background: #0077ed; }
+    .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-secondary {
+      background: #e8e8ed;
+      color: #1d1d1f;
+    }
+    .btn-secondary:hover { background: #dddde2; }
+    .btn-small {
+      padding: 5px 12px;
+      font-size: 12px;
+      border-radius: 8px;
+    }
+    .btn-download {
+      background: #34c759;
+      color: #fff;
+    }
+    .btn-download:hover { background: #30b753; }
+
+    .status {
+      margin: 14px 0 0;
+      font-size: 13px;
+      color: #86868b;
+      min-height: 18px;
+    }
+    .status.error { color: #ff3b30; }
+    .status.success { color: #34c759; }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 20px 0 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #e8e8ed;
+    }
+    .toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 13px;
+      color: #1d1d1f;
+    }
+    .toolbar-left label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+    .toolbar-left input[type="checkbox"] { width: 16px; height: 16px; accent-color: #0071e3; cursor: pointer; }
+    .count { color: #86868b; }
+
+    .song-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    .song-table th {
+      text-align: left;
+      padding: 8px 10px;
+      font-weight: 500;
+      color: #86868b;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      border-bottom: 1px solid #e8e8ed;
+    }
+    .song-table td {
+      padding: 10px;
+      border-bottom: 1px solid #f2f2f7;
+      vertical-align: middle;
+    }
+    .song-table tr:last-child td { border-bottom: none; }
+    .song-table tr:hover td { background: #fafafa; }
+    .song-table .col-check { width: 36px; }
+    .song-table .col-index { width: 40px; color: #86868b; font-size: 13px; }
+    .song-table .col-name { font-weight: 500; color: #1d1d1f; }
+    .song-table .col-artist { color: #86868b; font-size: 13px; }
+    .song-table .col-action { width: 80px; text-align: right; }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 0;
+      color: #86868b;
+      font-size: 14px;
+    }
+
+    .notice {
+      margin-top: 16px;
+      padding: 12px 14px;
+      background: #fff8e1;
+      border-radius: 10px;
+      font-size: 12px;
+      color: #8a6d00;
+      line-height: 1.6;
+    }
+    .notice strong { color: #6b5300; }
+
+    @media (max-width: 600px) {
+      body { padding: 12px; }
+      .container { padding: 20px 16px; }
+      .input-row input[type="text"] { min-width: 100%; }
+      .song-table .col-artist { display: none; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>🎵 网易云音乐下载器</h1>
+  <p class="subtitle">粘贴歌单 / 歌曲 ID 或链接，解析后即可下载。支持一键下载整张歌单。</p>
+
+  <div class="input-row">
+    <input type="text" id="input" placeholder="歌单ID / 歌曲ID / 粘贴链接" />
+    <select id="type">
+      <option value="playlist">歌单</option>
+      <option value="song">单曲</option>
+    </select>
+    <button class="btn btn-primary" id="parseBtn">解析</button>
+  </div>
+  <div class="status" id="status"></div>
+
+  <div id="resultArea" style="display:none;">
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <label>
+          <input type="checkbox" id="selectAll" checked />
+          全选
+        </label>
+        <span class="count" id="countLabel"></span>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-download" id="downloadSelectedBtn">⬇ 下载选中</button>
+      </div>
+    </div>
+
+    <table class="song-table">
+      <thead>
+        <tr>
+          <th class="col-check"></th>
+          <th class="col-index">#</th>
+          <th>歌曲</th>
+          <th class="col-artist">歌手</th>
+          <th class="col-action">操作</th>
+        </tr>
+      </thead>
+      <tbody id="songBody"></tbody>
+    </table>
+  </div>
+
+  <div class="notice">
+    <strong>使用提示：</strong>浏览器可能拦截连续自动下载，请点击地址栏右侧的“允许下载多个文件”。若仍被拦截，可点击每首歌右侧的“下载”按钮手动保存。VIP 歌曲可能只提供试听片段，请支持正版。
+  </div>
+</div>
+
+<script>
+  const API_BASE = 'https://api.injahow.cn/meting/';
+  let currentSongs = []; // { id, name, artist, url, selected }
+
+  const $ = (id) => document.getElementById(id);
+
+  function setStatus(msg, type = '') {
+    const el = $('status');
+    el.textContent = msg;
+    el.className = 'status' + (type ? ' ' + type : '');
+  }
+
+  // 从输入中提取 ID，并自动切换类型
+  function extractId(raw) {
+    const input = raw.trim();
+    if (!input) return null;
+
+    // 歌单链接
+    let m = input.match(/playlist\?id=(\d+)/) || input.match(/playlist\/(\d+)/);
+    if (m) { $('type').value = 'playlist'; return m[1]; }
+
+    // 单曲链接
+    m = input.match(/song\?id=(\d+)/) || input.match(/song\/(\d+)/);
+    if (m) { $('type').value = 'song'; return m[1]; }
+
+    // 纯数字
+    if (/^\d+$/.test(input)) return input;
+
+    return null;
+  }
+
+  async function parse() {
+    const raw = $('input').value.trim();
+    if (!raw) { setStatus('请输入歌单 ID、歌曲 ID 或链接', 'error'); return; }
+
+    const id = extractId(raw);
+    if (!id) { setStatus('无法识别有效的 ID，请检查输入', 'error'); return; }
+
+    const type = $('type').value; // 'playlist' | 'song'
+    const parseBtn = $('parseBtn');
+    parseBtn.disabled = true;
+    setStatus('解析中，请稍候…');
+
+    try {
+      if (type === 'playlist') {
+        const res = await fetch(`${API_BASE}?type=playlist&id=${id}&server=netease`);
+        if (!res.ok) throw new Error(`请求失败 (HTTP ${res.status})`);
+        const data = await res.json();
+        if (!Array.isArray(data) || data.length === 0) {
+          throw new Error('歌单为空或歌单不存在');
+        }
+
+        currentSongs = data.map(item => {
+          let songId = '';
+          try {
+            const u = new URL(item.url);
+            songId = u.searchParams.get('id') || '';
+          } catch (e) { /* ignore */ }
+
+          return {
+            id: songId,
+            name: item.name || '未知歌曲',
+            artist: item.artist || '未知歌手',
+            url: `https://music.163.com/song/media/outer/url?id=${songId}`,
+            selected: true
+          };
+        });
+      } else {
+        // 单曲模式：直接构造外链，歌名用 ID 代替
+        currentSongs = [{
+          id: id,
+          name: `歌曲 ${id}`,
+          artist: '—',
+          url: `https://music.163.com/song/media/outer/url?id=${id}`,
+          selected: true
+        }];
+      }
+
+      renderSongs();
+      $('resultArea').style.display = 'block';
+      setStatus(`解析成功，共 ${currentSongs.length} 首`, 'success');
+    } catch (err) {
+      console.error(err);
+      setStatus('解析失败：' + err.message, 'error');
+      $('resultArea').style.display = 'none';
+    } finally {
+      parseBtn.disabled = false;
+    }
+  }
+
+  function renderSongs() {
+    const tbody = $('songBody');
+    tbody.innerHTML = '';
+
+    if (currentSongs.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="empty-state">暂无歌曲</td></tr>';
+      updateCount();
+      return;
+    }
+
+    currentSongs.forEach((song, index) => {
+      const tr = document.createElement('tr');
+
+      // 复选框
+      const tdCheck = document.createElement('td');
+      tdCheck.className = 'col-check';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = song.selected;
+      cb.dataset.index = index;
+      cb.addEventListener('change', () => {
+        currentSongs[index].selected = cb.checked;
+        syncSelectAll();
+        updateCount();
+      });
+      tdCheck.appendChild(cb);
+
+      // 序号
+      const tdIndex = document.createElement('td');
+      tdIndex.className = 'col-index';
+      tdIndex.textContent = index + 1;
+
+      // 歌名
+      const tdName = document.createElement('td');
+      tdName.className = 'col-name';
+      tdName.textContent = song.name;
+
+      // 歌手
+      const tdArtist = document.createElement('td');
+      tdArtist.className = 'col-artist';
+      tdArtist.textContent = song.artist;
+
+      // 操作
+      const tdAction = document.createElement('td');
+      tdAction.className = 'col-action';
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-secondary btn-small btn-download';
+      btn.textContent = '下载';
+      btn.addEventListener('click', () => downloadSong(song));
+      tdAction.appendChild(btn);
+
+      tr.appendChild(tdCheck);
+      tr.appendChild(tdIndex);
+      tr.appendChild(tdName);
+      tr.appendChild(tdArtist);
+      tr.appendChild(tdAction);
+      tbody.appendChild(tr);
+    });
+
+    syncSelectAll();
+    updateCount();
+  }
+
+  function syncSelectAll() {
+    const all = $('selectAll');
+    all.checked = currentSongs.length > 0 && currentSongs.every(s => s.selected);
+  }
+
+  function updateCount() {
+    const total = currentSongs.length;
+    const selected = currentSongs.filter(s => s.selected).length;
+    $('countLabel').textContent = `已选 ${selected} / ${total} 首`;
+    $('downloadSelectedBtn').disabled = selected === 0;
+  }
+
+  function downloadSong(song) {
+    if (!song.url) return;
+    const a = document.createElement('a');
+    a.href = song.url;
+    a.download = `${song.artist} - ${song.name}.mp3`.replace(/[/\\?%*:|"<>]/g, '_');
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  async function downloadSelected() {
+    const selected = currentSongs.filter(s => s.selected);
+    if (selected.length === 0) { setStatus('请先勾选要下载的歌曲', 'error'); return; }
+
+    const btn = $('downloadSelectedBtn');
+    btn.disabled = true;
+
+    for (let i = 0; i < selected.length; i++) {
+      const song = selected[i];
+      setStatus(`正在下载 ${i + 1} / ${selected.length}：${song.name}`);
+      downloadSong(song);
+      // 间隔 400ms，降低被浏览器批量拦截的概率
+      await new Promise(r => setTimeout(r, 400));
+    }
+
+    setStatus(`已发送 ${selected.length} 个下载任务。如被拦截，请允许“自动下载多个文件”，或逐首点击下载。`, 'success');
+    btn.disabled = false;
+  }
+
+  // 事件绑定
+  $('parseBtn').addEventListener('click', parse);
+  $('input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') parse();
+  });
+
+  $('selectAll').addEventListener('change', (e) => {
+    const checked = e.target.checked;
+    currentSongs.forEach(s => s.selected = checked);
+    document.querySelectorAll('#songBody input[type="checkbox"]').forEach(cb => cb.checked = checked);
+    updateCount();
+  });
+
+  $('downloadSelectedBtn').addEventListener('click', downloadSelected);
+</script>
+</body>
+</html>
