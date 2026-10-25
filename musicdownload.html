@@ -145,7 +145,8 @@
   .col-name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .col-artist { color: var(--sub); font-size: 13px; width: 22%;
                 overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .col-action { width: 84px; text-align: right; }
+  .col-action { width: 128px; text-align: right; white-space: nowrap; }
+  .btn-raw { margin-left: 5px; text-decoration: none; display: inline-block; }
   .cover-thumb {
     width: 40px; height: 40px; border-radius: 7px; object-fit: cover;
     background: #f0f0f5; display: block;
@@ -252,6 +253,9 @@
       <li>在网易云音乐里打开歌单 → 分享 → 复制链接，粘贴到上面即可（会自动识别歌单 ID）。</li>
       <li>「打包 ZIP 下载」生成一个压缩包，只弹一次保存框，适合整张歌单；「分别下载」会逐首触发保存，浏览器可能询问是否允许下载多个文件。</li>
       <li>音质选「无损 FLAC」时，仅当该歌曲有 FLAC 版本才有效，否则会自动回落到 MP3。</li>
+      <li>如果保存下来的文件变成 <strong>.bin</strong>（个别手机浏览器会这样），说明它没认出声频格式：
+        把后缀手动改成 <strong>.mp3</strong> 即可播放；或者点每行的「直链」按钮，
+        在新标签页打开真实地址后右键「另存为」，这样扩展名一定正确。</li>
       <li>解析与下载都在你的浏览器里完成，不经由本站服务器存储。请支持正版音乐，下载内容仅限个人试听使用。</li>
     </ol>
   </div>
@@ -471,16 +475,44 @@
    *  下载核心
    * ======================================================= */
 
-  function saveBlob(blob, filename) {
-    var url = URL.createObjectURL(blob);
+  // 标准 MIME 映射：避免用服务器返回的非法 MIME（如 audio/mpeg; charset=UTF-8）
+  var MIME_BY_EXT = {
+    mp3: 'audio/mpeg',
+    flac: 'audio/flac',
+    m4a: 'audio/mp4',
+    ogg: 'audio/ogg',
+    wav: 'audio/wav',
+    zip: 'application/zip',
+    jpg: 'image/jpeg',
+    png: 'image/png',
+    lrc: 'text/plain'
+  };
+
+  function saveBlob(blob, filename, ext) {
+    // 关键修复：网易云 CDN 返回的是 "audio/mpeg; charset=UTF-8"，
+    // 带 charset 参数的音频 MIME 是非法的，部分浏览器无法识别，
+    // 会退回 application/octet-stream 存成 .bin。
+    // 这里重新包一层，用标准 MIME，并显式带上正确的扩展名。
+    var key = String(ext || '').toLowerCase().replace(/^\./, '');
+    var mime = MIME_BY_EXT[key] || 'application/octet-stream';
+    var clean = (blob.type === mime) ? blob : new Blob([blob], { type: mime });
+
+    // 老 IE / 旧 Edge
+    if (window.navigator && window.navigator.msSaveOrOpenBlob) {
+      try { window.navigator.msSaveOrOpenBlob(clean, filename); return; } catch (e) { /* 继续走标准流程 */ }
+    }
+
+    var url = URL.createObjectURL(clean);
     var a = document.createElement('a');
     a.href = url;
     a.download = filename;
+    a.rel = 'noopener';
     a.style.display = 'none';
     document.body.appendChild(a);
     a.click();
     a.remove();
-    setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+    // 大文件下载慢，多留一会儿再回收
+    setTimeout(function () { URL.revokeObjectURL(url); }, 120000);
   }
 
   /** 请求真实音频地址并取回二进制 */
@@ -680,13 +712,26 @@
       // 操作
       var tdAction = document.createElement('td');
       tdAction.className = 'col-action';
+
       var btn = document.createElement('button');
       btn.className = 'btn btn-ghost btn-small';
       btn.textContent = '下载';
       btn.addEventListener('click', function () {
         downloadOne(song, index, btn);
       });
+
+      // 兜底：直接打开音频真实地址（浏览器会按真实 .mp3 地址下载）
+      var btnRaw = document.createElement('a');
+      btnRaw.className = 'btn btn-ghost btn-small btn-raw';
+      btnRaw.textContent = '直链';
+      btnRaw.title = '在新标签页打开真实音频地址，可右键另存为';
+      btnRaw.target = '_blank';
+      btnRaw.rel = 'noopener';
+      btnRaw.href = apiUrl({ server: 'netease', type: 'url', id: song.id, br: $('quality').value });
+      btnRaw.setAttribute('data-sid', song.id);
+
       tdAction.appendChild(btn);
+      tdAction.appendChild(btnRaw);
 
       tr.appendChild(tdCheck);
       tr.appendChild(tdIndex);
@@ -752,7 +797,7 @@
       var track = await fetchTrack(song, $('quality').value);
       var filename = pad2(index + 1) + '. ' +
         sanitizeFilename(song.artist + ' - ' + song.name) + '.' + track.ext;
-      saveBlob(track.blob, filename);
+      saveBlob(track.blob, filename, track.ext);
       setRowState(index, 'ok');
       setStatus('已下载：' + esc(song.name), 'success');
     } catch (err) {
@@ -784,7 +829,7 @@
         var track = await fetchTrack(it.song, br);
         var filename = pad2(it.index + 1) + '. ' +
           sanitizeFilename(it.song.artist + ' - ' + it.song.name) + '.' + track.ext;
-        saveBlob(track.blob, filename);
+        saveBlob(track.blob, filename, track.ext);
         setRowState(it.index, 'ok');
         ok++;
       } catch (err) {
@@ -907,7 +952,7 @@
     try {
       var zipBlob = buildZip(files);
       var name = '网易云歌单_' + new Date().toISOString().slice(0, 10) + '.zip';
-      saveBlob(zipBlob, name);
+      saveBlob(zipBlob, name, 'zip');
       setStatus('打包完成：' + ok + ' 首，' + files.length + ' 个文件，共 ' +
         (zipBlob.size / 1048576).toFixed(1) + 'MB，已开始下载。',
         fail ? '' : 'success');
@@ -940,6 +985,15 @@
 
   $('downloadZipBtn').addEventListener('click', downloadZip);
   $('downloadEachBtn').addEventListener('click', downloadEach);
+
+  // 切换音质后同步更新每行的「直链」地址
+  $('quality').addEventListener('change', function () {
+    var br = $('quality').value;
+    document.querySelectorAll('.btn-raw').forEach(function (a) {
+      var sid = a.getAttribute('data-sid');
+      if (sid) a.href = apiUrl({ server: 'netease', type: 'url', id: sid, br: br });
+    });
+  });
   $('stopBtn').addEventListener('click', function () {
     state.cancelled = true;
     setStatus('正在停止…', '');
