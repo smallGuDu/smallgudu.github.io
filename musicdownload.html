@@ -1,125 +1,234 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>网易云音乐下载器 · 歌单 / 单曲</title>
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      background: #f5f5f7;
-      margin: 0;
-      padding: 24px;
-      display: flex;
-      justify-content: center;
-    }
-    .container {
-      width: 100%;
-      max-width: 900px;
-      background: #fff;
-      border-radius: 16px;
-      box-shadow: 0 4px 24px rgba(0,0,0,.08);
-      padding: 28px 32px 32px;
-    }
-    h1 { font-size: 22px; margin: 0 0 6px; color: #1d1d1f; }
-    .subtitle { font-size: 13px; color: #86868b; margin-bottom: 22px; }
-    .input-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-    .input-row input[type="text"] {
-      flex: 1; min-width: 220px; padding: 10px 14px;
-      border: 1px solid #d2d2d7; border-radius: 10px;
-      font-size: 14px; outline: none; transition: border-color .2s;
-    }
-    .input-row input[type="text"]:focus { border-color: #0071e3; }
-    .input-row select {
-      padding: 10px 12px; border: 1px solid #d2d2d7;
-      border-radius: 10px; font-size: 14px; background: #fff;
-      outline: none; cursor: pointer;
-    }
-    .btn {
-      padding: 10px 20px; border: none; border-radius: 10px;
-      font-size: 14px; font-weight: 500; cursor: pointer;
-      transition: background .2s, opacity .2s; white-space: nowrap;
-    }
-    .btn-primary { background: #0071e3; color: #fff; }
-    .btn-primary:hover { background: #0077ed; }
-    .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
-    .btn-secondary { background: #e8e8ed; color: #1d1d1f; }
-    .btn-secondary:hover { background: #dddde2; }
-    .btn-small { padding: 5px 12px; font-size: 12px; border-radius: 8px; }
-    .btn-download { background: #34c759; color: #fff; }
-    .btn-download:hover { background: #30b753; }
-    .btn-download:disabled { opacity: .6; cursor: not-allowed; }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>网易云歌单下载器 · SmallGuDu</title>
+<meta name="description" content="网易云音乐歌单 / 单曲在线解析下载，支持 VIP 歌曲，可一键打包成 ZIP。" />
+<link rel="shortcut icon" href="./smallGuDu.ico" />
+<style>
+  * { box-sizing: border-box; }
+  :root {
+    --bg: #f5f5f7;
+    --card: #ffffff;
+    --text: #1d1d1f;
+    --sub: #86868b;
+    --line: #e8e8ed;
+    --blue: #0071e3;
+    --green: #34c759;
+    --red: #ff3b30;
+    --orange: #ff9500;
+  }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                 "Helvetica Neue", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 24px 16px 60px;
+    display: flex;
+    justify-content: center;
+    -webkit-font-smoothing: antialiased;
+  }
+  .container {
+    width: 100%;
+    max-width: 940px;
+    background: var(--card);
+    border-radius: 18px;
+    box-shadow: 0 6px 30px rgba(0,0,0,.07);
+    padding: 30px 34px 34px;
+  }
+  h1 { font-size: 22px; margin: 0 0 6px; letter-spacing: -.01em; }
+  .subtitle { font-size: 13px; color: var(--sub); margin: 0 0 22px; line-height: 1.7; }
+  .subtitle code {
+    background: #f0f0f5; padding: 1px 6px; border-radius: 5px;
+    font-size: 12px; color: #444;
+  }
 
-    .status { margin: 14px 0 0; font-size: 13px; color: #86868b; min-height: 18px; line-height: 1.6; }
-    .status.error { color: #ff3b30; }
-    .status.success { color: #34c759; }
-    .status a { color: #0071e3; text-decoration: underline; }
+  /* ---------- 输入区 ---------- */
+  .input-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .input-row input[type="text"] {
+    flex: 1; min-width: 240px; padding: 11px 14px;
+    border: 1px solid #d2d2d7; border-radius: 11px;
+    font-size: 14px; outline: none; transition: border-color .2s, box-shadow .2s;
+    font-family: inherit; color: var(--text); background: #fff;
+  }
+  .input-row input[type="text"]:focus {
+    border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0,113,227,.12);
+  }
+  select {
+    padding: 11px 12px; border: 1px solid #d2d2d7; border-radius: 11px;
+    font-size: 14px; background: #fff; outline: none; cursor: pointer;
+    font-family: inherit; color: var(--text);
+  }
+  select:focus { border-color: var(--blue); }
 
-    .toolbar {
-      display: flex; justify-content: space-between; align-items: center;
-      flex-wrap: wrap; gap: 10px; margin: 20px 0 10px;
-      padding-bottom: 10px; border-bottom: 1px solid #e8e8ed;
-    }
-    .toolbar-left { display: flex; align-items: center; gap: 16px; font-size: 13px; color: #1d1d1f; }
-    .toolbar-left label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
-    .toolbar-left input[type="checkbox"] { width: 16px; height: 16px; accent-color: #0071e3; cursor: pointer; }
-    .count { color: #86868b; }
+  .btn {
+    padding: 11px 20px; border: none; border-radius: 11px;
+    font-size: 14px; font-weight: 500; cursor: pointer;
+    transition: background .18s, opacity .18s, transform .1s;
+    white-space: nowrap; font-family: inherit;
+  }
+  .btn:active { transform: scale(.985); }
+  .btn-primary { background: var(--blue); color: #fff; }
+  .btn-primary:hover { background: #0077ed; }
+  .btn-primary:disabled { opacity: .45; cursor: not-allowed; }
+  .btn-green { background: var(--green); color: #fff; }
+  .btn-green:hover { background: #30b753; }
+  .btn-ghost { background: #ececf1; color: var(--text); }
+  .btn-ghost:hover { background: #e2e2e8; }
+  .btn-ghost:disabled { opacity: .45; cursor: not-allowed; }
+  .btn-small { padding: 6px 12px; font-size: 12.5px; border-radius: 9px; }
 
-    .song-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-    .song-table th {
-      text-align: left; padding: 8px 10px; font-weight: 500;
-      color: #86868b; font-size: 12px; text-transform: uppercase;
-      letter-spacing: .04em; border-bottom: 1px solid #e8e8ed;
-    }
-    .song-table td { padding: 10px; border-bottom: 1px solid #f2f2f7; vertical-align: middle; }
-    .song-table tr:last-child td { border-bottom: none; }
-    .song-table tr:hover td { background: #fafafa; }
-    .song-table .col-check { width: 36px; }
-    .song-table .col-index { width: 40px; color: #86868b; font-size: 13px; }
-    .song-table .col-name { font-weight: 500; color: #1d1d1f; }
-    .song-table .col-artist { color: #86868b; font-size: 13px; }
-    .song-table .col-action { width: 90px; text-align: right; }
-    .empty-state { text-align: center; padding: 40px 0; color: #86868b; font-size: 14px; }
+  /* ---------- 状态 ---------- */
+  .status {
+    margin: 14px 0 0; font-size: 13px; color: var(--sub);
+    min-height: 20px; line-height: 1.7; word-break: break-all;
+  }
+  .status.error { color: var(--red); }
+  .status.success { color: #2a9d4e; }
+  .status a { color: var(--blue); }
 
-    .notice {
-      margin-top: 16px; padding: 12px 14px; background: #fff8e1;
-      border-radius: 10px; font-size: 12px; color: #8a6d00; line-height: 1.6;
-    }
-    .notice strong { color: #6b5300; }
+  /* ---------- 工具栏 ---------- */
+  .toolbar {
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 12px; margin: 22px 0 12px;
+    padding-bottom: 12px; border-bottom: 1px solid var(--line);
+  }
+  .toolbar-left { display: flex; align-items: center; gap: 16px; font-size: 13px; flex-wrap: wrap; }
+  .toolbar-right { display: flex; gap: 8px; flex-wrap: wrap; }
+  label.chk {
+    display: flex; align-items: center; gap: 6px;
+    cursor: pointer; user-select: none; font-size: 13px;
+  }
+  label.chk input[type="checkbox"] {
+    width: 16px; height: 16px; accent-color: var(--blue); cursor: pointer; margin: 0;
+  }
+  .count { color: var(--sub); }
 
-    @media (max-width: 600px) {
-      body { padding: 12px; }
-      .container { padding: 20px 16px; }
-      .input-row input[type="text"] { min-width: 100%; }
-      .song-table .col-artist { display: none; }
-    }
-  </style>
+  .options {
+    display: flex; gap: 18px; flex-wrap: wrap;
+    padding: 10px 0 4px; font-size: 13px;
+  }
+
+  /* ---------- 进度 ---------- */
+  .progress-wrap {
+    display: none; margin: 14px 0 4px;
+  }
+  .progress-wrap.show { display: block; }
+  .progress-bar {
+    height: 8px; background: #ececf1; border-radius: 6px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; width: 0%; border-radius: 6px;
+    background: linear-gradient(90deg, #0071e3, #34c759);
+    transition: width .25s ease;
+  }
+  .progress-text {
+    display: flex; justify-content: space-between; gap: 12px;
+    font-size: 12.5px; color: var(--sub); margin-top: 7px;
+  }
+
+  /* ---------- 列表 ---------- */
+  .song-table { width: 100%; border-collapse: collapse; font-size: 14px; table-layout: fixed; }
+  .song-table th {
+    text-align: left; padding: 8px 10px; font-weight: 500;
+    color: var(--sub); font-size: 11.5px; letter-spacing: .05em;
+    border-bottom: 1px solid var(--line); text-transform: uppercase;
+  }
+  .song-table td { padding: 9px 10px; border-bottom: 1px solid #f4f4f8; vertical-align: middle; }
+  .song-table tbody tr:last-child td { border-bottom: none; }
+  .song-table tbody tr:hover td { background: #fafafc; }
+  .col-check { width: 34px; }
+  .col-index { width: 44px; color: var(--sub); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+  .col-cover { width: 52px; }
+  .col-name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .col-artist { color: var(--sub); font-size: 13px; width: 22%;
+                overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .col-action { width: 84px; text-align: right; }
+  .cover-thumb {
+    width: 40px; height: 40px; border-radius: 7px; object-fit: cover;
+    background: #f0f0f5; display: block;
+  }
+  .state-dot {
+    display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+    background: #d2d2d7; margin-right: 6px; vertical-align: 1px;
+  }
+  .state-dot.ok { background: var(--green); }
+  .state-dot.fail { background: var(--red); }
+  .state-dot.busy { background: var(--orange); animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .25 } }
+
+  .empty-state { text-align: center; padding: 44px 0; color: var(--sub); font-size: 14px; line-height: 1.9; }
+
+  .notice {
+    margin-top: 20px; padding: 14px 16px; background: #fff9e8;
+    border: 1px solid #ffe8b0; border-radius: 12px;
+    font-size: 12.5px; color: #8a6d00; line-height: 1.85;
+  }
+  .notice strong { color: #6b5300; }
+  .notice ol { margin: 6px 0 0; padding-left: 20px; }
+
+  @media (max-width: 640px) {
+    body { padding: 10px 8px 40px; }
+    .container { padding: 20px 16px 24px; border-radius: 14px; }
+    .input-row input[type="text"] { min-width: 100%; }
+    .input-row select, .input-row .btn-primary { flex: 1; }
+    .col-artist, .col-cover { display: none; }
+    .toolbar-right { width: 100%; }
+    .toolbar-right .btn { flex: 1; }
+  }
+</style>
 </head>
 <body>
 <div class="container">
-  <h1>🎵 网易云音乐下载器</h1>
-  <p class="subtitle">粘贴歌单 / 歌曲 ID 或链接，解析后即可下载。支持一键下载整张歌单。</p>
+  <h1>🎵 网易云歌单下载器</h1>
+  <p class="subtitle">
+    粘贴歌单 ID 或链接即可解析整张歌单，支持 VIP 歌曲解析，可一键打包成 ZIP 下载。
+    接口来自 <code>api.qijieya.cn/meting</code>。
+  </p>
 
   <div class="input-row">
-    <input type="text" id="input" placeholder="歌单ID / 歌曲ID / 粘贴链接" />
-    <select id="type">
+    <input type="text" id="input" placeholder="歌单ID / 歌单链接 / 单曲ID" autocomplete="off" />
+    <select id="type" title="解析类型">
       <option value="playlist">歌单</option>
       <option value="song">单曲</option>
     </select>
+    <select id="quality" title="音质">
+      <option value="320">320K</option>
+      <option value="192">192K</option>
+      <option value="128">128K</option>
+      <option value="2000">无损 FLAC</option>
+    </select>
     <button class="btn btn-primary" id="parseBtn">解析</button>
   </div>
+
   <div class="status" id="status"></div>
+
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="progress-text">
+      <span id="progressLeft">准备中…</span>
+      <span id="progressRight"></span>
+    </div>
+  </div>
 
   <div id="resultArea" style="display:none;">
     <div class="toolbar">
       <div class="toolbar-left">
-        <label><input type="checkbox" id="selectAll" checked /> 全选</label>
+        <label class="chk"><input type="checkbox" id="selectAll" checked /> 全选</label>
         <span class="count" id="countLabel"></span>
       </div>
-      <div style="display:flex; gap:8px;">
-        <button class="btn btn-download" id="downloadSelectedBtn">⬇ 下载选中</button>
+      <div class="toolbar-right">
+        <button class="btn btn-ghost btn-small" id="stopBtn" style="display:none;">■ 停止</button>
+        <button class="btn btn-ghost btn-small" id="downloadEachBtn">分别下载</button>
+        <button class="btn btn-green btn-small" id="downloadZipBtn">📦 打包 ZIP 下载</button>
       </div>
+    </div>
+
+    <div class="options">
+      <label class="chk"><input type="checkbox" id="withCover" /> 同时下载封面</label>
+      <label class="chk"><input type="checkbox" id="withLrc" /> 同时下载歌词</label>
     </div>
 
     <table class="song-table">
@@ -127,6 +236,7 @@
         <tr>
           <th class="col-check"></th>
           <th class="col-index">#</th>
+          <th class="col-cover"></th>
           <th>歌曲</th>
           <th class="col-artist">歌手</th>
           <th class="col-action">操作</th>
@@ -137,268 +247,720 @@
   </div>
 
   <div class="notice">
-    <strong>下载说明：</strong>点击下载后，浏览器会先获取音频数据再保存为 MP3，不会跳转到播放页。首次批量下载时，若浏览器提示“允许下载多个文件”，请点击允许。若遇到跨域限制，会自动改为在新标签页打开音频，右键“另存为”即可。VIP 歌曲可能只提供试听片段，请支持正版。
+    <strong>使用说明</strong>
+    <ol>
+      <li>在网易云音乐里打开歌单 → 分享 → 复制链接，粘贴到上面即可（会自动识别歌单 ID）。</li>
+      <li>「打包 ZIP 下载」生成一个压缩包，只弹一次保存框，适合整张歌单；「分别下载」会逐首触发保存，浏览器可能询问是否允许下载多个文件。</li>
+      <li>音质选「无损 FLAC」时，仅当该歌曲有 FLAC 版本才有效，否则会自动回落到 MP3。</li>
+      <li>解析与下载都在你的浏览器里完成，不经由本站服务器存储。请支持正版音乐，下载内容仅限个人试听使用。</li>
+    </ol>
   </div>
 </div>
 
 <script>
-  const API_BASE = 'https://api.injahow.cn/meting/';
-  let currentSongs = [];
+(function () {
+  'use strict';
 
-  const $ = (id) => document.getElementById(id);
+  var API_BASE = 'https://api.qijieya.cn/meting/';
 
-  function setStatus(html, type = '') {
-    const el = $('status');
+  var $ = function (id) { return document.getElementById(id); };
+
+  var state = {
+    songs: [],        // {id, name, artist, pic, lrc, selected, status, error}
+    busy: false,
+    cancelled: false
+  };
+
+  /* =========================================================
+   *  工具
+   * ======================================================= */
+
+  function setStatus(html, type) {
+    var el = $('status');
     el.innerHTML = html;
     el.className = 'status' + (type ? ' ' + type : '');
   }
 
-  function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, c => ({
-      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    })[c]);
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
   }
 
-  function extractId(raw) {
-    const input = raw.trim();
-    if (!input) return null;
-    let m = input.match(/playlist\?id=(\d+)/) || input.match(/playlist\/(\d+)/);
-    if (m) { $('type').value = 'playlist'; return m[1]; }
-    m = input.match(/song\?id=(\d+)/) || input.match(/song\/(\d+)/);
-    if (m) { $('type').value = 'song'; return m[1]; }
-    if (/^\d+$/.test(input)) return input;
+  function apiUrl(params) {
+    var q = new URLSearchParams(params);
+    return API_BASE + '?' + q.toString();
+  }
+
+  function sleep(ms) {
+    return new Promise(function (r) { setTimeout(r, ms); });
+  }
+
+  /** 从用户输入里提取 ID 与类型 */
+  function extractTarget(raw) {
+    var s = String(raw || '').trim();
+    if (!s) return null;
+    if (/^\d+$/.test(s)) return { id: s, type: null };
+
+    var m = s.match(/playlist[\/?][^\d]*?(\d+)/i) || s.match(/playlist\/(\d+)/i);
+    if (m) return { id: m[1], type: 'playlist' };
+
+    m = s.match(/song[\/?][^\d]*?(\d+)/i) || s.match(/song\/(\d+)/i);
+    if (m) return { id: m[1], type: 'song' };
+
+    m = s.match(/[?&#]id=(\d+)/i);
+    if (m) {
+      return { id: m[1], type: /song|program/i.test(s) ? 'song' : 'playlist' };
+    }
     return null;
   }
 
+  /** 从歌单返回项里的 url 提取歌曲 id */
+  function pickSongId(item) {
+    if (item.id) return String(item.id);
+    try {
+      var u = new URL(item.url, location.href);
+      var id = u.searchParams.get('id');
+      if (id) return id;
+    } catch (e) { /* ignore */ }
+    var m = String(item.url || '').match(/[?&]id=(\d+)/);
+    return m ? m[1] : '';
+  }
+
+  function sanitizeFilename(name) {
+    return String(name || '')
+      .replace(/[\\\/:*?"<>|\r\n\t]/g, '_')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 110) || 'song';
+  }
+
+  function pad2(n) { return n < 10 ? '0' + n : String(n); }
+
+  /** 按并发上限映射执行 */
+  async function mapLimit(items, limit, fn) {
+    var results = new Array(items.length);
+    var cursor = 0;
+    var workers = [];
+    var n = Math.max(1, Math.min(limit, items.length));
+    for (var w = 0; w < n; w++) {
+      workers.push((async function () {
+        while (true) {
+          var i = cursor++;
+          if (i >= items.length) break;
+          results[i] = await fn(items[i], i);
+        }
+      })());
+    }
+    await Promise.all(workers);
+    return results;
+  }
+
+  /* =========================================================
+   *  ZIP（store 模式，自己实现，不依赖任何 CDN）
+   * ======================================================= */
+
+  var CRC_TABLE = (function () {
+    var t = new Uint32Array(256);
+    for (var n = 0; n < 256; n++) {
+      var c = n;
+      for (var k = 0; k < 8; k++) {
+        c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+      }
+      t[n] = c >>> 0;
+    }
+    return t;
+  })();
+
+  function crc32(bytes) {
+    var c = 0xFFFFFFFF;
+    for (var i = 0; i < bytes.length; i++) {
+      c = CRC_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+    }
+    return (c ^ 0xFFFFFFFF) >>> 0;
+  }
+
+  /**
+   * 生成一个不压缩的 zip Blob。
+   * @param {Array<{name:string, data:Uint8Array}>} files
+   * @returns {Blob}
+   */
+  function buildZip(files) {
+    var enc = new TextEncoder();
+    var parts = [];
+    var central = [];
+    var localOffset = 0;
+
+    var now = new Date();
+    var dosTime = ((now.getHours() & 0x1F) << 11) |
+                  ((now.getMinutes() & 0x3F) << 5) |
+                  ((now.getSeconds() >> 1) & 0x1F);
+    var dosDate = (((now.getFullYear() - 1980) & 0x7F) << 9) |
+                  (((now.getMonth() + 1) & 0x0F) << 5) |
+                  (now.getDate() & 0x1F);
+
+    for (var i = 0; i < files.length; i++) {
+      var f = files[i];
+      var nameBytes = enc.encode(f.name);
+      var data = f.data;
+      var size = data.length;
+      var crc = crc32(data);
+      var headerOffset = localOffset;
+
+      // ---- 本地文件头 ----
+      var lh = new Uint8Array(30);
+      var lv = new DataView(lh.buffer);
+      lv.setUint32(0, 0x04034b50, true);   // signature
+      lv.setUint16(4, 20, true);           // version needed
+      lv.setUint16(6, 0x0800, true);       // flag: UTF-8 文件名
+      lv.setUint16(8, 0, true);            // method: store
+      lv.setUint16(10, dosTime, true);
+      lv.setUint16(12, dosDate, true);
+      lv.setUint32(14, crc, true);
+      lv.setUint32(18, size, true);        // compressed size
+      lv.setUint32(22, size, true);        // uncompressed size
+      lv.setUint16(26, nameBytes.length, true);
+      lv.setUint16(28, 0, true);           // extra length
+
+      parts.push(lh, nameBytes, data);
+      localOffset += 30 + nameBytes.length + size;
+
+      // ---- 中央目录项 ----
+      var ch = new Uint8Array(46);
+      var cv = new DataView(ch.buffer);
+      cv.setUint32(0, 0x02014b50, true);   // signature
+      cv.setUint16(4, 20, true);           // version made by
+      cv.setUint16(6, 20, true);           // version needed
+      cv.setUint16(8, 0x0800, true);       // flag
+      cv.setUint16(10, 0, true);           // method: store
+      cv.setUint16(12, dosTime, true);
+      cv.setUint16(14, dosDate, true);
+      cv.setUint32(16, crc, true);
+      cv.setUint32(20, size, true);
+      cv.setUint32(24, size, true);
+      cv.setUint16(28, nameBytes.length, true);
+      cv.setUint16(30, 0, true);           // extra length
+      cv.setUint16(32, 0, true);           // comment length
+      cv.setUint16(34, 0, true);           // disk number start
+      cv.setUint16(36, 0, true);           // internal attributes
+      cv.setUint32(38, 0, true);           // external attributes
+      cv.setUint32(42, headerOffset, true);
+
+      central.push(ch, nameBytes);
+    }
+
+    var centralSize = 0;
+    for (var j = 0; j < central.length; j++) centralSize += central[j].length;
+    var centralOffset = localOffset;
+
+    var eocd = new Uint8Array(22);
+    var ev = new DataView(eocd.buffer);
+    ev.setUint32(0, 0x06054b50, true);     // signature
+    ev.setUint16(4, 0, true);              // disk number
+    ev.setUint16(6, 0, true);              // disk with central dir
+    ev.setUint16(8, files.length, true);   // entries on this disk
+    ev.setUint16(10, files.length, true);  // total entries
+    ev.setUint32(12, centralSize, true);
+    ev.setUint32(16, centralOffset, true);
+    ev.setUint16(20, 0, true);             // comment length
+
+    return new Blob(parts.concat(central, [eocd]), { type: 'application/zip' });
+  }
+
+  /* =========================================================
+   *  下载核心
+   * ======================================================= */
+
+  function saveBlob(blob, filename) {
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+  }
+
+  /** 请求真实音频地址并取回二进制 */
+  async function fetchTrack(song, br) {
+    var u = apiUrl({ server: 'netease', type: 'url', id: song.id, br: br });
+    var resp = await fetch(u, {
+      redirect: 'follow',
+      credentials: 'omit',
+      mode: 'cors'
+    });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+
+    var ctype = (resp.headers.get('content-type') || '').toLowerCase();
+    if (ctype.indexOf('text/html') >= 0 || ctype.indexOf('application/json') >= 0) {
+      throw new Error('无版权 / 需要 VIP');
+    }
+
+    var finalUrl = resp.url || '';
+    var ext = 'mp3';
+    var m = finalUrl.match(/\.(flac|mp3|m4a|ogg|wav)(?:$|\?)/i);
+    if (m) ext = m[1].toLowerCase();
+    else if (ctype.indexOf('flac') >= 0) ext = 'flac';
+    else if (ctype.indexOf('mp4') >= 0 || ctype.indexOf('m4a') >= 0) ext = 'm4a';
+
+    var blob = await resp.blob();
+    if (blob.size < 1024) throw new Error('返回内容过小（可能无版权）');
+
+    return { blob: blob, ext: ext, size: blob.size };
+  }
+
+  async function fetchCover(song) {
+    var u = apiUrl({ server: 'netease', type: 'pic', id: song.picId || song.id, cover: 500 });
+    var resp = await fetch(u, { credentials: 'omit', mode: 'cors' });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    var blob = await resp.blob();
+    if (blob.size < 100) throw new Error('封面为空');
+    return blob;
+  }
+
+  async function fetchLrc(song) {
+    var u = apiUrl({ server: 'netease', type: 'lrc', id: song.id });
+    var resp = await fetch(u, { credentials: 'omit', mode: 'cors' });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    var text = await resp.text();
+    if (!text.trim()) throw new Error('无歌词');
+    return text;
+  }
+
+  /** 更新某一行左侧状态点 */
+  function setRowState(index, kind) {
+    var dot = document.querySelector('[data-dot="' + index + '"]');
+    if (!dot) return;
+    dot.className = 'state-dot' + (kind ? ' ' + kind : '');
+  }
+
+  /* =========================================================
+   *  解析
+   * ======================================================= */
+
   async function parse() {
-    const raw = $('input').value.trim();
-    if (!raw) { setStatus('请输入歌单 ID、歌曲 ID 或链接', 'error'); return; }
+    var raw = $('input').value.trim();
+    if (!raw) { setStatus('请输入歌单 ID、歌单链接或单曲 ID', 'error'); return; }
 
-    const id = extractId(raw);
-    if (!id) { setStatus('无法识别有效的 ID，请检查输入', 'error'); return; }
+    var target = extractTarget(raw);
+    if (!target) {
+      setStatus('无法识别 ID，请粘贴完整歌单链接或纯数字 ID', 'error');
+      return;
+    }
 
-    const type = $('type').value;
-    const parseBtn = $('parseBtn');
-    parseBtn.disabled = true;
-    setStatus('解析中，请稍候…');
+    var typeSel = $('type');
+    var type = target.type || typeSel.value;
+    if (target.type) typeSel.value = target.type;
+
+    var btn = $('parseBtn');
+    btn.disabled = true;
+    btn.textContent = '解析中…';
+    setStatus('正在解析，请稍候…');
+    $('resultArea').style.display = 'none';
+    $('progressWrap').classList.remove('show');
 
     try {
-      const apiType = type === 'playlist' ? 'playlist' : 'song';
-      const res = await fetch(`${API_BASE}?type=${apiType}&id=${id}&server=netease`);
-      if (!res.ok) throw new Error(`请求失败 (HTTP ${res.status})`);
-      const data = await res.json();
+      var res = await fetch(apiUrl({ server: 'netease', type: type, id: target.id }), {
+        credentials: 'omit', mode: 'cors'
+      });
+      if (!res.ok) throw new Error('请求失败 HTTP ' + res.status);
+      var data = await res.json();
       if (!Array.isArray(data) || data.length === 0) {
-        throw new Error(type === 'playlist' ? '歌单为空或歌单不存在' : '歌曲不存在或无版权');
+        throw new Error(type === 'playlist' ? '歌单为空或不存在' : '歌曲不存在或无版权');
       }
 
-      currentSongs = data.map(item => {
-        let songId = '';
+      state.songs = data.map(function (item) {
+        var picId = '';
         try {
-          const u = new URL(item.url);
-          songId = u.searchParams.get('id') || '';
+          var pu = new URL(item.pic || '', location.href);
+          picId = pu.searchParams.get('id') || '';
         } catch (e) { /* ignore */ }
+        var id = pickSongId(item);
         return {
-          id: songId,
+          id: id,
           name: item.name || '未知歌曲',
           artist: item.artist || '未知歌手',
-          url: item.url || (songId ? `https://music.163.com/song/media/outer/url?id=${songId}` : ''),
-          selected: true
+          pic: item.pic || '',
+          picId: picId,
+          lrc: item.lrc || '',
+          selected: true,
+          ready: false,
+          size: 0,
+          ext: 'mp3',
+          error: ''
         };
       });
 
       renderSongs();
       $('resultArea').style.display = 'block';
-      setStatus(`解析成功，共 ${currentSongs.length} 首`, 'success');
+      setStatus('解析成功，共 ' + state.songs.length + ' 首。选择音质后点击「打包 ZIP 下载」。', 'success');
+
+      try { localStorage.setItem('ncm_last_input', raw); } catch (e) { /* ignore */ }
     } catch (err) {
       console.error(err);
-      setStatus('解析失败：' + escapeHtml(err.message), 'error');
-      $('resultArea').style.display = 'none';
+      setStatus('解析失败：' + esc(err.message), 'error');
     } finally {
-      parseBtn.disabled = false;
+      btn.disabled = false;
+      btn.textContent = '解析';
     }
   }
 
+  /* =========================================================
+   *  渲染
+   * ======================================================= */
+
   function renderSongs() {
-    const tbody = $('songBody');
+    var tbody = $('songBody');
     tbody.innerHTML = '';
 
-    if (currentSongs.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" class="empty-state">暂无歌曲</td></tr>';
+    if (state.songs.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="empty-state">暂无歌曲</td></tr>';
       updateCount();
       return;
     }
 
-    currentSongs.forEach((song, index) => {
-      const tr = document.createElement('tr');
+    var frag = document.createDocumentFragment();
 
-      const tdCheck = document.createElement('td');
+    state.songs.forEach(function (song, index) {
+      var tr = document.createElement('tr');
+
+      // 勾选
+      var tdCheck = document.createElement('td');
       tdCheck.className = 'col-check';
-      const cb = document.createElement('input');
+      var cb = document.createElement('input');
       cb.type = 'checkbox';
       cb.checked = song.selected;
-      cb.addEventListener('change', () => {
-        currentSongs[index].selected = cb.checked;
+      cb.style.width = '16px';
+      cb.style.height = '16px';
+      cb.style.accentColor = '#0071e3';
+      cb.style.cursor = 'pointer';
+      cb.addEventListener('change', function () {
+        song.selected = cb.checked;
         syncSelectAll();
         updateCount();
       });
       tdCheck.appendChild(cb);
 
-      const tdIndex = document.createElement('td');
+      // 序号 + 状态点
+      var tdIndex = document.createElement('td');
       tdIndex.className = 'col-index';
-      tdIndex.textContent = index + 1;
+      var dot = document.createElement('span');
+      dot.className = 'state-dot';
+      dot.setAttribute('data-dot', String(index));
+      tdIndex.appendChild(dot);
+      tdIndex.appendChild(document.createTextNode(pad2(index + 1)));
 
-      const tdName = document.createElement('td');
+      // 封面
+      var tdCover = document.createElement('td');
+      tdCover.className = 'col-cover';
+      var img = document.createElement('img');
+      img.className = 'cover-thumb';
+      img.loading = 'lazy';
+      img.alt = '';
+      img.referrerPolicy = 'no-referrer';
+      if (song.pic) {
+        img.src = apiUrl({ server: 'netease', type: 'pic', id: song.picId || song.id, cover: 100 });
+      }
+      tdCover.appendChild(img);
+
+      // 歌名
+      var tdName = document.createElement('td');
       tdName.className = 'col-name';
       tdName.textContent = song.name;
+      tdName.title = song.name;
 
-      const tdArtist = document.createElement('td');
+      // 歌手
+      var tdArtist = document.createElement('td');
       tdArtist.className = 'col-artist';
       tdArtist.textContent = song.artist;
+      tdArtist.title = song.artist;
 
-      const tdAction = document.createElement('td');
+      // 操作
+      var tdAction = document.createElement('td');
       tdAction.className = 'col-action';
-      const btn = document.createElement('button');
-      btn.className = 'btn btn-secondary btn-small btn-download';
+      var btn = document.createElement('button');
+      btn.className = 'btn btn-ghost btn-small';
       btn.textContent = '下载';
-      btn.addEventListener('click', async () => {
-        const result = await downloadSong(song, { btnEl: btn, openFallback: true });
-        if (!result.ok) {
-          setStatus(
-            `下载失败：${escapeHtml(song.name)}（${escapeHtml(result.error)}）。` +
-            `<a href="${song.url}" target="_blank" rel="noopener">点击手动打开</a>，右键“另存为”即可。`,
-            'error'
-          );
-        } else {
-          setStatus(`已开始下载：${escapeHtml(song.name)}`, 'success');
-        }
+      btn.addEventListener('click', function () {
+        downloadOne(song, index, btn);
       });
       tdAction.appendChild(btn);
 
       tr.appendChild(tdCheck);
       tr.appendChild(tdIndex);
+      tr.appendChild(tdCover);
       tr.appendChild(tdName);
       tr.appendChild(tdArtist);
       tr.appendChild(tdAction);
-      tbody.appendChild(tr);
+      frag.appendChild(tr);
     });
 
+    tbody.appendChild(frag);
     syncSelectAll();
     updateCount();
   }
 
   function syncSelectAll() {
-    $('selectAll').checked = currentSongs.length > 0 && currentSongs.every(s => s.selected);
+    var all = state.songs.length > 0 && state.songs.every(function (s) { return s.selected; });
+    $('selectAll').checked = all;
   }
 
   function updateCount() {
-    const total = currentSongs.length;
-    const selected = currentSongs.filter(s => s.selected).length;
-    $('countLabel').textContent = `已选 ${selected} / ${total} 首`;
-    $('downloadSelectedBtn').disabled = selected === 0;
+    var total = state.songs.length;
+    var selected = state.songs.filter(function (s) { return s.selected; }).length;
+    $('countLabel').textContent = '已选 ' + selected + ' / ' + total + ' 首';
+    $('downloadZipBtn').disabled = selected === 0 || state.busy;
+    $('downloadEachBtn').disabled = selected === 0 || state.busy;
   }
 
-  function sanitizeFilename(name) {
-    return String(name).replace(/[\\/:*?"<>|\r\n]/g, '_').trim().slice(0, 120) || 'song';
+  /* =========================================================
+   *  进度
+   * ======================================================= */
+
+  function showProgress(done, total, label) {
+    $('progressWrap').classList.add('show');
+    var pct = total ? Math.round(done / total * 100) : 0;
+    $('progressFill').style.width = pct + '%';
+    $('progressLeft').textContent = label || '';
+    $('progressRight').textContent = done + ' / ' + total + '（' + pct + '%）';
   }
 
-  /**
-   * 先 fetch 拿到音频 Blob，再用同源 Blob URL 触发下载。
-   * 这样 a.download 才会生效，不会跳转到播放页。
-   */
-  async function fetchAudioBlob(url) {
-    const resp = await fetch(url, { redirect: 'follow', credentials: 'omit' });
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  function hideProgressLater() {
+    setTimeout(function () {
+      // 完成后保留一会儿进度条，别立刻消失
+    }, 1200);
+  }
 
-    const contentType = (resp.headers.get('content-type') || '').toLowerCase();
-    if (contentType.includes('text/html') || contentType.includes('application/json')) {
-      throw new Error('返回了网页/JSON 而非音频，可能无版权或需要 VIP');
+  function setBusy(busy) {
+    state.busy = busy;
+    $('parseBtn').disabled = busy;
+    $('stopBtn').style.display = busy ? '' : 'none';
+    $('input').disabled = busy;
+    updateCount();
+  }
+
+  /* =========================================================
+   *  下载
+   * ======================================================= */
+
+  async function downloadOne(song, index, btn) {
+    if (btn) { btn.disabled = true; btn.textContent = '…'; }
+    setRowState(index, 'busy');
+    try {
+      var track = await fetchTrack(song, $('quality').value);
+      var filename = pad2(index + 1) + '. ' +
+        sanitizeFilename(song.artist + ' - ' + song.name) + '.' + track.ext;
+      saveBlob(track.blob, filename);
+      setRowState(index, 'ok');
+      setStatus('已下载：' + esc(song.name), 'success');
+    } catch (err) {
+      setRowState(index, 'fail');
+      setStatus('下载失败：' + esc(song.name) + '（' + esc(err.message) + '）', 'error');
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = '下载'; }
+    }
+  }
+
+  /** 分别下载：逐首个触发保存框 */
+  async function downloadEach() {
+    var picked = state.songs
+      .map(function (s, i) { return { song: s, index: i }; })
+      .filter(function (x) { return x.song.selected; });
+    if (!picked.length) { setStatus('请先勾选要下载的歌曲', 'error'); return; }
+
+    setBusy(true);
+    state.cancelled = false;
+    var br = $('quality').value;
+    var ok = 0, fail = 0;
+
+    for (var i = 0; i < picked.length; i++) {
+      if (state.cancelled) break;
+      var it = picked[i];
+      showProgress(i, picked.length, '正在下载：' + it.song.name);
+      setRowState(it.index, 'busy');
+      try {
+        var track = await fetchTrack(it.song, br);
+        var filename = pad2(it.index + 1) + '. ' +
+          sanitizeFilename(it.song.artist + ' - ' + it.song.name) + '.' + track.ext;
+        saveBlob(track.blob, filename);
+        setRowState(it.index, 'ok');
+        ok++;
+      } catch (err) {
+        setRowState(it.index, 'fail');
+        it.song.error = err.message;
+        fail++;
+      }
+      // 浏览器对连续下载有节流，留点间隔
+      await sleep(150);
     }
 
-    const blob = await resp.blob();
-    if (blob.size < 1024) {
-      throw new Error('文件过小，可能无版权或需要 VIP');
+    showProgress(picked.length, picked.length, state.cancelled ? '已停止' : '下载完成');
+    setBusy(false);
+
+    if (state.cancelled) {
+      setStatus('已停止。成功 ' + ok + ' 首，失败 ' + fail + ' 首。', '');
+    } else if (fail === 0) {
+      setStatus('全部完成，共 ' + ok + ' 首。若浏览器询问是否允许下载多个文件，请点击「允许」。', 'success');
+    } else {
+      setStatus('完成：成功 ' + ok + ' 首，失败 ' + fail + ' 首（多为无版权或需要 VIP）。', 'error');
     }
-    return blob;
+    hideProgressLater();
   }
 
-  async function downloadSong(song, { btnEl = null, openFallback = true } = {}) {
-    if (!song.url) return { ok: false, error: '缺少下载地址' };
+  /** 打包 ZIP */
+  async function downloadZip() {
+    var picked = state.songs
+      .map(function (s, i) { return { song: s, index: i }; })
+      .filter(function (x) { return x.song.selected; });
+    if (!picked.length) { setStatus('请先勾选要下载的歌曲', 'error'); return; }
 
-    const filename = sanitizeFilename(`${song.artist} - ${song.name}`) + '.mp3';
-    if (btnEl) { btnEl.disabled = true; btnEl.textContent = '下载中…'; }
+    var withCover = $('withCover').checked;
+    var withLrc = $('withLrc').checked;
+    var br = $('quality').value;
+
+    setBusy(true);
+    state.cancelled = false;
+    var ok = 0, fail = 0, totalBytes = 0;
+    var solved = 0;
+    var TOO_BIG = 900 * 1024 * 1024; // 900MB 内存保护
+
+    // 先并发抓取所有音频（并发 3，避免把 API 打爆）
+    var results = await mapLimit(picked, 3, async function (it) {
+      if (state.cancelled) return null;
+      setRowState(it.index, 'busy');
+      try {
+        var track = await fetchTrack(it.song, br);
+        totalBytes += track.size;
+        return { it: it, track: track };
+      } catch (err) {
+        setRowState(it.index, 'fail');
+        it.song.error = err.message;
+        fail++;
+        return null;
+      } finally {
+        solved++;
+        showProgress(solved, picked.length, '正在获取：' + it.song.name);
+      }
+    });
+
+    if (state.cancelled) {
+      setBusy(false);
+      setStatus('已取消。', '');
+      return;
+    }
+
+    var got = results.filter(Boolean);
+    if (!got.length) {
+      setBusy(false);
+      setStatus('全部歌曲获取失败（多为无版权或需要 VIP）。', 'error');
+      return;
+    }
+
+    if (totalBytes > TOO_BIG) {
+      var gb = (totalBytes / 1073741824).toFixed(2);
+      var okGo = confirm(
+        '这批歌曲总体积约 ' + gb + ' GB，超出浏览器单次打包的安全范围，' +
+        '很可能在打包时卡死或崩溃。\n\n' +
+        '建议点「取消」后改用「分别下载」分批下载。\n' +
+        '仍要继续打包吗？'
+      );
+      if (!okGo) {
+        setBusy(false);
+        setStatus('已取消打包。这批歌曲体积约 ' + gb +
+          ' GB，建议改用「分别下载」，或分批勾选后再打包。', '');
+        return;
+      }
+    }
+
+    // 组装 zip
+    showProgress(picked.length, picked.length, '正在打包…');
+    var files = [];
+
+    for (var i = 0; i < got.length; i++) {
+      var g = got[i];
+      var base = pad2(g.it.index + 1) + '. ' +
+        sanitizeFilename(g.it.song.artist + ' - ' + g.it.song.name);
+      var buf = new Uint8Array(await g.track.blob.arrayBuffer());
+      files.push({ name: base + '.' + g.track.ext, data: buf });
+      ok++;
+      setRowState(g.it.index, 'ok');
+
+      if (withCover) {
+        try {
+          var coverBlob = await fetchCover(g.it.song);
+          files.push({
+            name: base + '.jpg',
+            data: new Uint8Array(await coverBlob.arrayBuffer())
+          });
+        } catch (e) { /* 封面失败不影响主流程 */ }
+      }
+      if (withLrc) {
+        try {
+          var lrcText = await fetchLrc(g.it.song);
+          files.push({ name: base + '.lrc', data: new TextEncoder().encode(lrcText) });
+        } catch (e) { /* 歌词失败不影响主流程 */ }
+      }
+    }
 
     try {
-      const blob = await fetchAudioBlob(song.url);
-      const blobUrl = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = blobUrl;
-      a.download = filename;
-      a.style.display = 'none';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      // 60 秒后再释放，避免下载未完成就被回收
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
-      return { ok: true };
+      var zipBlob = buildZip(files);
+      var name = '网易云歌单_' + new Date().toISOString().slice(0, 10) + '.zip';
+      saveBlob(zipBlob, name);
+      setStatus('打包完成：' + ok + ' 首，' + files.length + ' 个文件，共 ' +
+        (zipBlob.size / 1048576).toFixed(1) + 'MB，已开始下载。',
+        fail ? '' : 'success');
     } catch (err) {
-      if (openFallback) {
-        try { window.open(song.url, '_blank', 'noopener'); } catch (e) { /* 可能被弹窗拦截 */ }
-      }
-      return { ok: false, error: err.message || '未知错误' };
-    } finally {
-      if (btnEl) { btnEl.disabled = false; btnEl.textContent = '下载'; }
+      console.error(err);
+      setStatus('打包失败：' + esc(err.message) + '，建议改用「分别下载」。', 'error');
     }
+
+    setBusy(false);
+    hideProgressLater();
   }
 
-  async function downloadSelected() {
-    const selected = currentSongs.filter(s => s.selected);
-    if (selected.length === 0) { setStatus('请先勾选要下载的歌曲', 'error'); return; }
+  /* =========================================================
+   *  事件绑定
+   * ======================================================= */
 
-    const btn = $('downloadSelectedBtn');
-    btn.disabled = true;
-
-    let success = 0;
-    const failed = [];
-
-    for (let i = 0; i < selected.length; i++) {
-      const song = selected[i];
-      setStatus(`正在下载 ${i + 1} / ${selected.length}：${escapeHtml(song.name)}`);
-
-      // 批量时关闭新标签页回退，避免一次性弹出一堆页面
-      const result = await downloadSong(song, { openFallback: false });
-      if (result.ok) success++;
-      else failed.push({ song, error: result.error });
-
-      // 轻微间隔，避免请求过密
-      if (i < selected.length - 1) await new Promise(r => setTimeout(r, 120));
-    }
-
-    if (failed.length === 0) {
-      setStatus(`已发送 ${success} 个下载任务。若浏览器询问是否允许下载多个文件，请点击“允许”。`, 'success');
-    } else {
-      const names = failed.map(f => escapeHtml(f.song.name)).slice(0, 5).join('、');
-      const more = failed.length > 5 ? ` 等 ${failed.length} 首` : '';
-      setStatus(
-        `成功 ${success} 首，失败 ${failed.length} 首：${names}${more}。` +
-        `失败原因多为跨域限制、无版权或需要 VIP，可逐首点击右侧“下载”按钮重试。`,
-        failed.length === selected.length ? 'error' : ''
-      );
-    }
-    btn.disabled = false;
-  }
-
-  // 事件绑定
   $('parseBtn').addEventListener('click', parse);
-  $('input').addEventListener('keydown', (e) => { if (e.key === 'Enter') parse(); });
+  $('input').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') parse();
+  });
 
-  $('selectAll').addEventListener('change', (e) => {
-    const checked = e.target.checked;
-    currentSongs.forEach(s => s.selected = checked);
-    document.querySelectorAll('#songBody input[type="checkbox"]').forEach(cb => cb.checked = checked);
+  $('selectAll').addEventListener('change', function (e) {
+    var checked = e.target.checked;
+    state.songs.forEach(function (s) { s.selected = checked; });
+    document.querySelectorAll('#songBody input[type="checkbox"]').forEach(function (cb) {
+      cb.checked = checked;
+    });
     updateCount();
   });
 
-  $('downloadSelectedBtn').addEventListener('click', downloadSelected);
+  $('downloadZipBtn').addEventListener('click', downloadZip);
+  $('downloadEachBtn').addEventListener('click', downloadEach);
+  $('stopBtn').addEventListener('click', function () {
+    state.cancelled = true;
+    setStatus('正在停止…', '');
+  });
+
+  // 恢复上次输入
+  try {
+    var last = localStorage.getItem('ncm_last_input');
+    if (last) $('input').value = last;
+  } catch (e) { /* ignore */ }
+
+  // 支持直接带 ?playlist=xxx 打开
+  try {
+    var qs = new URLSearchParams(location.search);
+    var p = qs.get('playlist') || qs.get('id');
+    if (p) {
+      $('input').value = p;
+      parse();
+    }
+  } catch (e) { /* ignore */ }
+})();
 </script>
 </body>
 </html>
